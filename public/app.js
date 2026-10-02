@@ -1298,7 +1298,8 @@ const Rec = {
     catch (_) { this.starting = false; return toast("Mikrofon izni verilmedi"); }
     this.starting = false;
     if (!S.cur) { stream.getTracks().forEach((t) => t.stop()); return; }
-    const types = ["audio/webm;codecs=opus", "audio/ogg;codecs=opus", "audio/mp4", "audio/webm"];
+    // AAC/MP4 önce: hem Android hem iPhone oynatabilsin
+    const types = ["audio/mp4;codecs=mp4a.40.2", "audio/mp4", "audio/webm;codecs=opus", "audio/ogg;codecs=opus", "audio/webm"];
     const mime = types.find((t) => MediaRecorder.isTypeSupported(t)) || "";
     const rec = new MediaRecorder(stream, mime ? { mimeType: mime, audioBitsPerSecond: 48000 } : undefined);
     const chunks = [];
@@ -1768,6 +1769,7 @@ function secureHelp() {
     <ol class="steps">
       <li><a class="btn small" href="/ca.crt" download="yerel-ca.crt">${icon("download")}<span>Sertifikayı indir</span></a></li>
       <li><b>Android:</b> Ayarlar → Güvenlik → Diğer güvenlik ayarları → Şifreleme ve kimlik bilgileri → Sertifika yükle → <b>CA sertifikası</b> → indirilen <code>yerel-ca.crt</code>. Menü adları markaya göre değişir; Ayarlar'da “sertifika” diye arat.</li>
+      <li><b>iPhone/iPad:</b> Safari'de sertifikayı indir → Ayarlar → <b>Profil indirildi</b> → Yükle. Sonra Ayarlar → Genel → Hakkında → <b>Sertifika Güven Ayarları</b> → “Yerel Messenger CA”yı aç.</li>
       <li><b>Windows:</b> Dosyaya çift tıkla → Sertifika yükle → Yerel Makine → “Tüm sertifikaları aşağıdaki depolama alanına yerleştir” → <b>Güvenilen Kök Sertifika Yetkilileri</b> → Son.</li>
       <li><b>Linux:</b> Chrome'da <code>chrome://settings/certificates</code> → Yetkililer → İçe aktar → “Web sitelerini tanımlamak için güven”.</li>
       <li>Chrome'u kapatıp aç ve <code>${esc(sUrl)}</code> adresine gir.</li>

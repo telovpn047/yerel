@@ -1,5 +1,5 @@
 /* Yerel Messenger service worker */
-const VERSION = "yerel-v3";
+const VERSION = "yerel-v4";
 const SHELL = ["/", "/app.js", "/style.css", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png", "/icons/badge-96.png"];
 
 self.addEventListener("install", (e) => {

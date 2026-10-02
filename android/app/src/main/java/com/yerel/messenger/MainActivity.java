@@ -90,8 +90,8 @@ public class MainActivity extends Activity {
     /* ---------------- izinler / servis ---------------- */
     void askPermissions() {
         List<String> need = new ArrayList<>();
-        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
-            need.add(Manifest.permission.POST_NOTIFICATIONS);
+        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED)
+            need.add("android.permission.POST_NOTIFICATIONS");
         if (Build.VERSION.SDK_INT < 29 && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
             need.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
         if (!need.isEmpty()) requestPermissions(need.toArray(new String[0]), REQ_NOTIF);

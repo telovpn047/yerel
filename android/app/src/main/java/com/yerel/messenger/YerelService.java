@@ -32,7 +32,7 @@ public class YerelService extends Service {
                 .setContentIntent(Notif.openApp(this, 3, null, false))
                 .addAction(new Notification.Action.Builder(null, "Kapat", stopPi).build())
                 .build();
-        if (Build.VERSION.SDK_INT >= 34) startForeground(Notif.ID_SERVICE, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+        if (Build.VERSION.SDK_INT >= 34) startForeground(Notif.ID_SERVICE, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
         else startForeground(Notif.ID_SERVICE, n);
         return START_NOT_STICKY;
     }
