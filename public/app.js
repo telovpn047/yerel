@@ -11,6 +11,7 @@ const isMobile = () => matchMedia("(max-width: 760px)").matches;
 const coarse = matchMedia("(pointer: coarse)").matches;
 const SECURE = window.isSecureContext;
 const NATIVE = window.YerelApp || null; // Android uygulaması içindeyse köprü
+const APP = NATIVE ? "Yakyn" : "Yerel";
 const nativeFg = () => { try { return NATIVE.isForeground(); } catch (_) { return true; } };
 const DEVICE = (() => {
   const ua = navigator.userAgent;
@@ -115,6 +116,11 @@ const icon = (n, cls = "") => `<svg class="ic ${cls}" viewBox="0 0 24 24" aria-h
 /* =====================================================================
    Durum
    ===================================================================== */
+// Yakyn uygulaması oturumu adres çubuğundaki #yk=… ile verir
+(() => {
+  const m = /[#&]yk=([^&]+)/.exec(location.hash || "");
+  if (m) { localStorage.setItem("yerel.token", decodeURIComponent(m[1])); history.replaceState(null, "", location.pathname + location.search); }
+})();
 const S = {
   token: localStorage.getItem("yerel.token"),
   info: null, me: null,
@@ -286,12 +292,17 @@ function preview(m) {
    Giriş ekranı
    ===================================================================== */
 function showAuth() {
+  if (NATIVE && NATIVE.reauth) {
+    $("#app").innerHTML = `<div class="boot"><img src="/icons/icon-192.png" width="96" height="96" alt=""></div>`;
+    try { NATIVE.reauth(); } catch (_) {}
+    return;
+  }
   const inv = S.info && S.info.invite;
   app.innerHTML = `
   <div class="auth">
     <div class="auth-card">
       <img class="auth-logo" src="/icons/icon-192.png" alt="" width="64" height="64">
-      <h1>Yerel</h1>
+      <h1>${APP}</h1>
       <p class="auth-sub">Aynı Wi-Fi'daki cihazlar arasında mesaj, dosya, sesli mesaj ve arama. İnternet gerekmez.</p>
       <div class="seg" role="tablist">
         <button class="on" data-mode="login">Giriş yap</button>
@@ -437,7 +448,7 @@ addEventListener("online", checkAlive);
 function setOnline(v) {
   S.online = v;
   const t = $("#sideTitle");
-  if (t) t.innerHTML = v ? "Yerel" : `<span class="spin"></span>Bağlanıyor…`;
+  if (t) t.innerHTML = v ? APP : `<span class="spin"></span>Bağlanıyor…`;
 }
 async function resync() {
   try {
@@ -552,7 +563,7 @@ function renderShell() {
     <aside class="side">
       <header class="side-h">
         <button class="ibtn" id="btnMenu" aria-label="Ayarlar">${icon("menu")}</button>
-        <div class="side-title" id="sideTitle">Yerel</div>
+        <div class="side-title" id="sideTitle">${APP}</div>
       </header>
       <div class="searchbox">${icon("search")}<input id="q" type="search" placeholder="Sohbet veya kişi ara" autocomplete="off"></div>
       ${SECURE ? "" : `<div class="side-hint">${secureHint(false)}</div>`}
@@ -733,7 +744,7 @@ function drawList() {
 function updateBadge() {
   let n = 0;
   for (const c of S.chats.values()) n += c.unread || 0;
-  document.title = n ? `(${n}) Yerel` : "Yerel";
+  document.title = n ? `(${n}) ${APP}` : APP;
   try { if (navigator.setAppBadge) n ? navigator.setAppBadge(n) : navigator.clearAppBadge(); } catch (_) {}
 }
 function isRead(c, m) {
@@ -1702,17 +1713,17 @@ function openSettings() {
       <p>${SECURE ? "Sesli mesaj, arama, bildirim ve uygulama kurulumu açık." : "Sesli mesaj, arama, bildirim ve ana ekrana ekleme bu adreste çalışmaz."}</p>
       <div class="box-act">${!SECURE && su ? `<a class="btn small primary" href="${esc(su)}">Güvenli adrese geç</a>` : ""}<button class="btn small" data-act="secure-help">Sertifika kurulumu</button></div>
     </div>
-    ${NATIVE ? `<button class="row-btn" data-native-server>${icon("link")}<span>Sunucuyu değiştir</span><em>${esc(location.host)}</em></button>` : ""}
+    ${NATIVE && NATIVE.hostInfo ? `<div class="row-btn static">${icon("link")}<span>Ağ</span><em>${esc(NATIVE.hostInfo())}</em></div>` : NATIVE ? `<button class="row-btn" data-native-server>${icon("link")}<span>Sunucuyu değiştir</span><em>${esc(location.host)}</em></button>` : ""}
     <button class="row-btn" data-notif>${icon("bell")}<span>Bildirimler</span><em id="notifSt">${notifState()}</em></button>
     ${S.installPrompt ? `<button class="row-btn" data-install>${icon("install")}<span>Uygulamayı yükle</span><em>ana ekrana ekle</em></button>` : ""}
     <div class="row-btn static">${icon("palette")}<span>Tema</span>
       <div class="seg mini" id="themeSeg"><button data-t="" class="${!theme ? "on" : ""}">Sistem</button><button data-t="light" class="${theme === "light" ? "on" : ""}">Açık</button><button data-t="dark" class="${theme === "dark" ? "on" : ""}">Koyu</button></div></div>
-    <details class="row-det"><summary class="row-btn">${icon("key")}<span>Şifre değiştir</span></summary>
+    ${NATIVE && NATIVE.reauth ? "" : `<details class="row-det"><summary class="row-btn">${icon("key")}<span>Şifre değiştir</span></summary>
       <div class="det-b"><label class="fld"><span>Mevcut şifre</span><input type="password" id="pOld" autocomplete="current-password"></label>
       <label class="fld"><span>Yeni şifre</span><input type="password" id="pNew" autocomplete="new-password"></label>
       <button class="btn primary" id="pSave">Şifreyi kaydet</button></div></details>
-    <button class="row-btn danger" data-logout>${icon("logout")}<span>Bu cihazda çıkış yap</span></button>
-    <p class="foot">Mesajlar ve dosyalar yalnızca sunucu cihazında (Termux) saklanır; internete hiçbir şey gönderilmez.</p>`,
+    <button class="row-btn danger" data-logout>${icon("logout")}<span>Bu cihazda çıkış yap</span></button>`}
+    <p class="foot">${NATIVE && NATIVE.reauth ? "Mesajlar aynı Wi-Fi'daki bir telefonda saklanır; internete hiçbir şey gönderilmez." : "Mesajlar ve dosyalar yalnızca sunucu cihazında (Termux) saklanır; internete hiçbir şey gönderilmez."}</p>`,
   (s) => {
     s.body.addEventListener("click", async (e) => {
       const t = e.target;
@@ -1769,7 +1780,7 @@ function secureHelp() {
     <ol class="steps">
       <li><a class="btn small" href="/ca.crt" download="yerel-ca.crt">${icon("download")}<span>Sertifikayı indir</span></a></li>
       <li><b>Android:</b> Ayarlar → Güvenlik → Diğer güvenlik ayarları → Şifreleme ve kimlik bilgileri → Sertifika yükle → <b>CA sertifikası</b> → indirilen <code>yerel-ca.crt</code>. Menü adları markaya göre değişir; Ayarlar'da “sertifika” diye arat.</li>
-      <li><b>iPhone/iPad:</b> Safari'de sertifikayı indir → Ayarlar → <b>Profil indirildi</b> → Yükle. Sonra Ayarlar → Genel → Hakkında → <b>Sertifika Güven Ayarları</b> → “Yerel Messenger CA”yı aç.</li>
+      <li><b>iPhone/iPad:</b> Safari'de sertifikayı indir → Ayarlar → <b>Profil indirildi</b> → Yükle. Sonra Ayarlar → Genel → Hakkında → <b>Sertifika Güven Ayarları</b> → “Yerel Messenger CA” veya “Yakyn CA”yı aç.</li>
       <li><b>Windows:</b> Dosyaya çift tıkla → Sertifika yükle → Yerel Makine → “Tüm sertifikaları aşağıdaki depolama alanına yerleştir” → <b>Güvenilen Kök Sertifika Yetkilileri</b> → Son.</li>
       <li><b>Linux:</b> Chrome'da <code>chrome://settings/certificates</code> → Yetkililer → İçe aktar → “Web sitelerini tanımlamak için güven”.</li>
       <li>Chrome'u kapatıp aç ve <code>${esc(sUrl)}</code> adresine gir.</li>

@@ -1,9 +1,8 @@
-name: APK
+name: Yakyn APK
 
 on:
   push:
     branches: [main, master]
-    paths: ['android/**', '.github/workflows/apk.yml']
   workflow_dispatch:
 
 permissions:
@@ -12,6 +11,9 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
 
@@ -20,7 +22,36 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - uses: android-actions/setup-android@v3
+      - name: NDK + CMake
+        run: |
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" --install "ndk;27.3.13750724" "cmake;3.22.1" > /dev/null
+
+      - name: Gömülü Node.js (nodejs-mobile)
+        run: |
+          mkdir -p nm && cd nm
+          gh release download -R digidem/nodejs-mobile -p 'nodejs-mobile-android-[0-9]*.zip' \
+            || gh release download v18.20.4 -R nodejs-mobile/nodejs-mobile -p '*android*.zip'
+          ls -la
+          unzip -q -o '*.zip'
+          LIB=$(find . -path '*arm64-v8a*' -name libnode.so | head -1)
+          BIN=$(dirname "$(dirname "$LIB")")
+          HDR=$(dirname "$(find . -name node.h -path '*include*' | head -1)")
+          echo "bin=$BIN hdr=$HDR"
+          ls "$BIN"
+          mkdir -p ../android/app/libnode/include
+          cp -r "$BIN" ../android/app/libnode/bin
+          cp -r "$HDR" ../android/app/libnode/include/node
+          ls ../android/app/libnode/bin ../android/app/libnode/include/node | head
+
+      - name: Sunucu dosyalarını APK'ya koy
+        run: |
+          D=android/app/src/main/assets/server
+          rm -rf "$D" && mkdir -p "$D"
+          cp server.js certgen.js "$D"/
+          cp -r public "$D"/
+          find "$D" -type f | head -30
 
       - uses: gradle/actions/setup-gradle@v4
         with:
@@ -31,17 +62,17 @@ jobs:
         run: gradle assembleRelease --no-daemon --stacktrace
 
       - name: APK'yı adlandır
-        run: cp android/app/build/outputs/apk/release/app-release.apk Yerel.apk
+        run: cp android/app/build/outputs/apk/release/app-release.apk Yakyn.apk && ls -la Yakyn.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Yerel-apk
-          path: Yerel.apk
+          name: Yakyn-apk
+          path: Yakyn.apk
 
-      - name: Release olarak yayınla
+      - name: Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: apk-${{ github.run_number }}
-          name: Yerel APK ${{ github.run_number }}
-          files: Yerel.apk
+          tag_name: yakyn-${{ github.run_number }}
+          name: Yakyn ${{ github.run_number }}
+          files: Yakyn.apk
           make_latest: true

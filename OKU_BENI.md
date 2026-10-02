@@ -55,15 +55,12 @@ Sertifika: `bash sertifika.sh --yenile` (sunucu sertifikası), `bash sertifika.s
 - Aramalar 1-1'dir ve aynı ağda çalışır. Bazı router'larda "AP/Client Isolation" açıksa cihazlar birbirini göremez; kapat.
 - Hotspot: sunucu telefonu hotspot açarsa diğer cihazlar ona bağlanıp kullanabilir.
 
-## Android uygulaması (APK)
-`android/` klasörü, sunucuya bağlanan bir istemci uygulamasıdır (sunucu yine Termux'ta çalışır). APK GitHub Actions ile derlenir:
-```bash
-pkg install -y git gh && gh auth login && cd ~/yerel && git init -b main && git add -A && git commit -m yerel && gh repo create yerel --private --source=. --push
-```
-Birkaç dakika sonra APK: GitHub → repo → **Releases** (veya Actions → son çalıştırma → *Yerel-apk*).
+## Yakyn (Android uygulaması, Termux gerekmez)
+`android/` klasörü **Yakyn** uygulamasıdır: sunucu (Node.js) APK'nın içine gömülüdür.
+- İlk açılışta sadece ad sorulur; IP, şifre, kurulum yok.
+- Uygulama aynı Wi-Fi'da başka bir Yakyn arar (mDNS + ağ taraması). Varsa ona katılır, yoksa sunucuyu kendisi başlatır.
+- İki telefon aynı anda sunucu olursa sonradan başlayan geri çekilir; sunucu telefon ağdan çıkarsa diğerleri yeniden seçim yapar.
+- Mesaj geçmişi o an sunucu olan telefonda tutulur (sunucu değişirse yeni sunucuda geçmiş boş başlar).
+- PC'den katılmak için: uygulamada Ayarlar → Ağ satırındaki `https://…:8443` adresi.
 
-Uygulama ilk açılışta ağdaki sunucuyu otomatik bulur. Web sürümüne göre farkları:
-- Arka planda açık kalır (bildirim çubuğunda "Yerel bağlı"), mesaj bildirimleri ve gelen aramada zil + tam ekran arama ekranı.
-- Herhangi bir uygulamadan **Paylaş → Yerel**.
-- İndirilen dosyalar **İndirilenler/Yerel** klasörüne gider.
-- Ayarlar → **Sunucuyu değiştir**.
+APK GitHub Actions ile derlenir (`.github/workflows/apk.yml`), Releases'tan `Yakyn.apk` indirilir.

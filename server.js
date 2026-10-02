@@ -22,6 +22,9 @@ const DATA = path.join(ROOT, "data");
 const FILES = path.join(DATA, "files");
 const MSGS = path.join(DATA, "messages");
 const CERTS = path.join(ROOT, "certs");
+const STARTED = Date.now();
+const SERVER_ID = require("crypto").randomBytes(6).toString("hex");
+const LABEL = process.env.APP_LABEL || "Yerel Messenger";
 const PUB = path.join(ROOT, "public");
 for (const d of [DATA, FILES, MSGS]) fs.mkdirSync(d, { recursive: true });
 
@@ -291,7 +294,7 @@ async function api(req, res, u, p) {
   const M = req.method;
 
   if (M === "GET" && p === "/api/info") {
-    return json(res, 200, { name: "Yerel", ips: serverIPs, port: PORT, httpsPort: HTTPS_PORT, https: httpsOn, invite: !!INVITE, users: Object.keys(db.users).length });
+    return json(res, 200, { name: "Yerel", app: LABEL, id: SERVER_ID, started: STARTED, ips: serverIPs, port: PORT, httpsPort: HTTPS_PORT, https: httpsOn, invite: !!INVITE, users: Object.keys(db.users).length });
   }
   if (M === "POST" && p === "/api/register") {
     const b = await readBody(req);
@@ -639,9 +642,9 @@ function certCovers(ips) {
 
 (async () => {
   serverIPs = await lanIPs();
-  if (fs.existsSync(path.join(CERTS, "ca.key")) && !certCovers(serverIPs)) {
-    console.log("• IP değişmiş, sunucu sertifikası yenileniyor (CA aynı kalır)...");
-    try { execFileSync("bash", [path.join(ROOT, "sertifika.sh"), "--yenile"], { stdio: "inherit" }); } catch (e) { console.log("  Sertifika yenilenemedi:", e.message); }
+  if (!certCovers(serverIPs)) {
+    console.log("• Sertifika hazırlanıyor (CA varsa aynı kalır)...");
+    try { require("./certgen").ensure(CERTS, serverIPs, { label: LABEL }); } catch (e) { console.log("  Sertifika üretilemedi:", e.message); }
   }
 
   const httpServer = http.createServer(handler);
@@ -684,7 +687,7 @@ function certCovers(ips) {
   console.log(`  http://127.0.0.1:${PORT}   (bu cihaz)\n`);
   if (!httpsOn) console.log("  ! HTTPS kapalı: ses kaydı, arama ve uygulama kurulumu için 'bash sertifika.sh' çalıştır.\n");
   if (INVITE) console.log("  Davet kodu açık: kayıt için DAVET_KODU gerekir.\n");
-  try {
+  if (!process.env.YAKYN) try {
     const r = spawnSync("qrencode", ["-t", "ansiutf8", "-m", "2", best], { stdio: "inherit" });
     if (r.status === 0) console.log(`  Diğer cihazla okut: ${best}\n`);
   } catch (_) {}

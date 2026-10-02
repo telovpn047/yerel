@@ -2,7 +2,11 @@ data/
 certs/
 android/.gradle/
 android/app/build/
+android/app/.cxx/
+android/app/libnode/
+android/app/src/main/assets/server/
 android/build/
-android/local.properties
-*.zip
 android/build-termux/
+android/local.properties
+nm/
+*.zip
